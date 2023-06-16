@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'chat_app_backend',
     'rest_framework',
     'corsheaders',
     'rest_framework_simplejwt',
