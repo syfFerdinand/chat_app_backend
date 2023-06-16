@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 @api_view(['GET','POST'])
 def message_list(request, format=None):
     if request.method == 'GET':
-        messages = Message.objects.all()
+        messages = Message.objects.filter(is_deleted=False)
         serializer = MessageSerializer(messages,many=True)
         return Response(serializer.data)
 
