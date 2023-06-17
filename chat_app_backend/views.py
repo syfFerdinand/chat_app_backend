@@ -1,25 +1,27 @@
 from django.shortcuts import render
 from .models import Message
-from .serializers import MessageSerializer
+from .serializers import MessageSerializer,MessageDictSerializer
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.contrib.auth.models import User
+from django.db.models import Q
 
 # this method create and return list of message
 @api_view(['GET','POST'])
 def message_list(request, format=None):
     if request.method == 'GET':
         messages = Message.objects.filter(is_deleted=False)
-        serializer = MessageSerializer(messages,many=True)
+        serializer = MessageSerializer(messages,many=True, context={'request': request})
         return Response(serializer.data)
 
     if request.method == 'POST':
-        serializer = MessageSerializer(data=request.data)
-
+        serializer = MessageSerializer(data=request.data, context={'request': request})
+        data =request.data.copy()
         if serializer.is_valid():
             user = User.objects.get(pk=1)
-            serializer.save(created_by=user,updated_by=user)
+            to = User.objects.get(pk=data['send_at'])
+            serializer.save(created_by=user,updated_by=user,send_at=to)
             return Response(serializer.data,status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -33,11 +35,11 @@ def message_detail(request, id, format=None):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'GET':
-        serializer = MessageSerializer(message)
+        serializer = MessageSerializer(message, context={'request': request})
         return Response(serializer.data)
     
     elif request.method == 'PUT':
-        serializer = MessageSerializer(message, data=request.data)
+        serializer = MessageSerializer(message, data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -45,3 +47,29 @@ def message_detail(request, id, format=None):
     elif request.method == 'DELETE':
         message.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET'])
+def user_latest_messages(request, id, format=None):
+    from django.db.models import Max
+    
+    messages = Message.objects.filter(
+        Q(send_at=id) | Q(created_by=id),
+           is_deleted=False
+        ).values('created_by').annotate(
+        latest_message=Max('created_at'),
+        content=Max('content')
+    ).order_by('created_by')
+    
+    serializer = MessageDictSerializer(messages, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def user_messages(request, id, with_id, format=None):
+    
+    messages = Message.objects.filter(
+        (Q(created_by=id) & Q(send_at=with_id)) | (Q(created_by=with_id) & Q(send_at=id)),
+        is_deleted=False
+    ).order_by('-created_at')
+    
+    serializer = MessageSerializer(messages, many=True, context={'request': request,'user':id})
+    return Response(serializer.data)

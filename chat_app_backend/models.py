@@ -8,6 +8,7 @@ class Message(models.Model):
     created_at = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
+    send_at = models.ForeignKey(User, on_delete=models.CASCADE, related_name='send_at_user')
 
     def delete(self, using=None, keep_parents=False):
         self.is_deleted = True
