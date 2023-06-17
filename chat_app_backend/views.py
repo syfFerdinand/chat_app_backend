@@ -12,14 +12,14 @@ from django.db.models import Q
 def message_list(request, format=None):
     if request.method == 'GET':
         messages = Message.objects.filter(is_deleted=False)
-        serializer = MessageSerializer(messages,many=True, context={'request': request})
+        serializer = MessageSerializer(messages,many=True, context={'request': request,'user':id})
         return Response(serializer.data)
 
     if request.method == 'POST':
-        serializer = MessageSerializer(data=request.data, context={'request': request})
+        serializer = MessageSerializer(data=request.data, context={'request': request,'user':id})
         data =request.data.copy()
         if serializer.is_valid():
-            user = User.objects.get(pk=1)
+            user = User.objects.get(pk=data['send_by'])
             to = User.objects.get(pk=data['send_at'])
             serializer.save(created_by=user,updated_by=user,send_at=to)
             return Response(serializer.data,status=status.HTTP_201_CREATED)
@@ -35,11 +35,11 @@ def message_detail(request, id, format=None):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'GET':
-        serializer = MessageSerializer(message, context={'request': request})
+        serializer = MessageSerializer(message, context={'request': request,'user':id})
         return Response(serializer.data)
     
     elif request.method == 'PUT':
-        serializer = MessageSerializer(message, data=request.data, context={'request': request})
+        serializer = MessageSerializer(message, data=request.data, context={'request': request,'user':id})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -56,8 +56,9 @@ def user_latest_messages(request, id, format=None):
         Q(send_at=id) | Q(created_by=id),
            is_deleted=False
         ).values('created_by').annotate(
-        latest_message=Max('created_at'),
-        content=Max('content')
+        created_at=Max('created_at'),
+        content=Max('content'),
+        id=Max('id'),
     ).order_by('created_by')
     
     serializer = MessageDictSerializer(messages, many=True)

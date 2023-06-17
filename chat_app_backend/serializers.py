@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email','groups','user_permissions']
+        fields = ['id', 'username','groups','user_permissions']
 
 class MessageSerializer(serializers.ModelSerializer):
     is_sender = serializers.SerializerMethodField()
@@ -20,7 +20,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
 class MessageDictSerializer(serializers.Serializer):
     created_by = serializers.SerializerMethodField()
-    latest_message = serializers.DateTimeField()
+    created_at = serializers.DateTimeField()
     content = serializers.CharField()
 
     def get_created_by(self, message):
