@@ -1,6 +1,11 @@
 from django.db import models
-from django.contrib.auth.models import User
-# Create your models here.
+from django.contrib.auth.models import AbstractUser
+
+class User(AbstractUser):
+    tel = models.IntegerField(null=True)
+    photo_profile = models.ImageField(upload_to='profile_photos')
+    online = models.BooleanField(default=False)
+    
 class Message(models.Model):
     content = models.TextField()
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_message')

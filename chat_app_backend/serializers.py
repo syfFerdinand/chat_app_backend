@@ -1,12 +1,11 @@
 from rest_framework import serializers
-from .models import Message
-from django.contrib.auth.models import User
+from .models import Message,User
 
 
-class UserSerializer(serializers.HyperlinkedModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username','groups','user_permissions']
+        fields = '__all__'
 
 class MessageSerializer(serializers.ModelSerializer):
     is_sender = serializers.SerializerMethodField()
