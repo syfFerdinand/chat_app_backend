@@ -47,17 +47,16 @@ def message_list(request, user, format=None):
     if request.method == "GET":
         messages = Message.objects.filter(is_deleted=False)
         serializer = MessageSerializer(
-            messages, many=True, context={"request": request, "user": id}
+            messages, many=True, context={"request": request, "user": user.id}
         )
         return Response(serializer.data)
 
     if request.method == "POST":
         serializer = MessageSerializer(
-            data=request.data, context={"request": request, "user": id}
+            data=request.data, context={"request": request, "user": user.id}
         )
         data = request.data.copy()
         if serializer.is_valid():
-            user = User.objects.get(pk=data["send_by"])
             to = User.objects.get(pk=data["send_at"])
             serializer.save(created_by=user, updated_by=user, send_at=to)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
