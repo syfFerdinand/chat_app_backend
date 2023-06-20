@@ -138,7 +138,10 @@ def user_create(request, format=None):
         data=request.data, context={"request": request}
     )
     if serializer.is_valid():
-        serializer.save()
+        user = serializer.save()
+        password = serializer.validated_data["password"]
+        user.set_password(password)  # Hash the password
+        user.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
