@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from .models import Message, User
-from .serializers import MessageSerializer,MessageDictSerializer
+from .serializers import MessageSerializer, UserSerializer, MessageDictSerializer
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -112,9 +112,60 @@ def user_latest_messages(request, user, format=None):
 @verify_token_required
 def user_messages(request, user, with_id, format=None):
     messages = Message.objects.filter(
-        (Q(created_by=user.id) & Q(send_at=with_id)) | (Q(created_by=with_id) & Q(send_at=user.id)),
-        is_deleted=False
-    ).order_by('created_at')
-    
-    serializer = MessageSerializer(messages, many=True, context={'request': request,'user':user.id})
+        (Q(created_by=user.id) & Q(send_at=with_id))
+        | (Q(created_by=with_id) & Q(send_at=user.id)),
+        is_deleted=False,
+    ).order_by("created_at")
+
+    serializer = MessageSerializer(
+        messages, many=True, context={"request": request}
+    )
     return Response(serializer.data)
+
+
+@api_view(["GET"])
+@verify_token_required
+def user_list(request, user, format=None):
+    users = User.objects.all()
+    serializer = UserSerializer(
+        users, many=True, context={"request": request}
+    )
+    return Response(serializer.data)
+
+
+@api_view(["POST"])
+def user_create(request, format=None):
+    serializer = UserSerializer(
+        data=request.data, context={"request": request}
+    )
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# this method update, get and delete one user data
+@api_view(["GET", "PUT", "DELETE"])
+@verify_token_required
+def user_detail(request, user, format=None):
+    try:
+        user = User.objects.get(pk=id)
+    except User.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == "GET":
+        serializer = UserSerializer(user, context={"request": request})
+        return Response(serializer.data)
+
+    elif request.method == "PUT":
+        data = request.data.copy()
+        serializer = UserSerializer(
+            user, data=data['user'], context={"request": request}
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    elif request.method == "DELETE":
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

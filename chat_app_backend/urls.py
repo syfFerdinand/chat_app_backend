@@ -22,6 +22,9 @@ from .views import message_detail,message_list,user_latest_messages,user_message
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/messages/', message_list),
+    path('api/users/', user_list),
+    path('api/users/create', user_create),
+    path('api/users/update', user_detail),
     path('api/users/messages/<int:with_id>', user_messages),
     path('api/users/messages/latest', user_latest_messages),
     path('api/messages/<int:id>', message_detail),
