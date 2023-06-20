@@ -6,10 +6,41 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.contrib.auth.models import User
 from django.db.models import Q
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.db.models import Max
+
+def verify_token_required(view_func):
+    def wrapper(request, *args, **kwargs):
+        # Extraire le token d'accès de l'en-tête Authorization
+        auth_header = request.META.get('HTTP_AUTHORIZATION')
+        if auth_header and auth_header.startswith('Bearer '):
+            access_token = auth_header.split(' ')[1]
+
+            # Valider et authentifier le token d'accès
+            authentication = JWTAuthentication()
+            validated_token = authentication.get_validated_token(access_token)
+
+            # Décoder le token d'accès pour obtenir les informations de l'utilisateur
+            user_id = validated_token.payload['user_id']
+
+            # Récupérer l'objet utilisateur à partir de votre modèle User
+            user = User.objects.get(id=user_id)
+
+            # Passer l'objet utilisateur à la méthode de la classe d'API
+            kwargs['user'] = user
+
+            # Appeler la méthode de la classe d'API
+            return view_func(request, *args, **kwargs)
+
+        # Le token d'accès est invalide ou manquant, renvoyer une réponse d'erreur
+        return Response({'detail': 'Token d\'accès invalide'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    return wrapper
 
 # this method create and return list of message
 @api_view(['GET','POST'])
-def message_list(request, format=None):
+@verify_token_required
+def message_list(request, user, format=None):
     if request.method == 'GET':
         messages = Message.objects.filter(is_deleted=False)
         serializer = MessageSerializer(messages,many=True, context={'request': request,'user':id})
@@ -27,7 +58,8 @@ def message_list(request, format=None):
 
 # this method update, get and delete one message data
 @api_view(['GET','PUT','DELETE'])
-def message_detail(request, id, format=None):
+@verify_token_required
+def message_detail(request, user, format=None):
 
     try:
         message = Message.objects.get(pk=id)
@@ -49,28 +81,28 @@ def message_detail(request, id, format=None):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['GET'])
-def user_latest_messages(request, id, format=None):
-    from django.db.models import Max
+@verify_token_required
+def user_latest_messages(request,user, format=None):
     
     messages = Message.objects.filter(
-        Q(send_at=id) | Q(created_by=id),
+        Q(send_at=user.id) | Q(created_by=user.id),
            is_deleted=False
         ).values('created_by').annotate(
         created_at=Max('created_at'),
-        content=Max('content'),
-        id=Max('id'),
-    ).order_by('created_by')
+        content=Max('content')
+    ).order_by('-created_at')
     
     serializer = MessageDictSerializer(messages, many=True)
     return Response(serializer.data)
 
 @api_view(['GET'])
-def user_messages(request, id, with_id, format=None):
+@verify_token_required
+def user_messages(request,user, with_id, format=None):
     
     messages = Message.objects.filter(
-        (Q(created_by=id) & Q(send_at=with_id)) | (Q(created_by=with_id) & Q(send_at=id)),
+        (Q(created_by=user.id) & Q(send_at=with_id)) | (Q(created_by=with_id) & Q(send_at=user.id)),
         is_deleted=False
-    ).order_by('-created_at')
+    ).order_by('created_at')
     
-    serializer = MessageSerializer(messages, many=True, context={'request': request,'user':id})
+    serializer = MessageSerializer(messages, many=True, context={'request': request,'user':user.id})
     return Response(serializer.data)

@@ -22,8 +22,8 @@ from .views import message_detail,message_list,user_latest_messages,user_message
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/messages/', message_list),
-    path('api/users/<int:id>/messages/<int:with_id>', user_messages),
-    path('api/users/<int:id>/messages/latest', user_latest_messages),
+    path('api/users/messages/<int:with_id>', user_messages),
+    path('api/users/messages/latest', user_latest_messages),
     path('api/messages/<int:id>', message_detail),
     path('api/token/', jwt_views.TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),
