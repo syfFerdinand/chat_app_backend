@@ -143,7 +143,16 @@ def user_create(request, format=None):
         password = serializer.validated_data["password"]
         user.set_password(password)  # Hash the password
         user.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        # Generate access and refresh tokens
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        response_data = {
+            "access_token": access_token,
+            "refresh_token": str(refresh),
+        }
+        return Response(response_data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
