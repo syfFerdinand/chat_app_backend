@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from django.db.models import Q
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.db.models import Max
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 def verify_token_required(view_func):
@@ -117,7 +118,7 @@ def user_messages(request, user, with_id, format=None):
     ).order_by("created_at")
 
     serializer = MessageSerializer(
-        messages, many=True, context={"request": request}
+        messages, many=True, context={"request": request,'user':user.id}
     )
     return Response(serializer.data)
 
@@ -127,7 +128,7 @@ def user_messages(request, user, with_id, format=None):
 def user_list(request, user, format=None):
     users = User.objects.all()
     serializer = UserSerializer(
-        users, many=True, context={"request": request}
+        users, many=True, context={"request": request,'user':user.id}
     )
     return Response(serializer.data)
 
