@@ -160,11 +160,7 @@ def user_create(request, format=None):
 @api_view(["GET", "PUT", "DELETE"])
 @verify_token_required
 def user_detail(request, user, format=None):
-    try:
-        user = User.objects.get(pk=id)
-    except User.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
+    
     if request.method == "GET":
         serializer = UserSerializer(user, context={"request": request})
         return Response(serializer.data)
