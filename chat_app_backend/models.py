@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser):
     tel = models.IntegerField(null=True)
-    photo_profile = models.ImageField(upload_to='profile_photos')
+    photo_profile = models.ImageField(upload_to='profile_photos',null=True)
     online = models.BooleanField(default=False)
     
 class Message(models.Model):
